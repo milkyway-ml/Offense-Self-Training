@@ -25,8 +25,8 @@ def get_args():
     parser.add_argument("--num_train_epochs", default=2, type=int)
     parser.add_argument("--learning_rate", default=5e-5, type=float)
     parser.add_argument("--warmup_ratio", default=0.15, type=float)
-    parser.add_argument("--classifier_dropout", default=None, type=float)
-    parser.add_argument("--attention_dropout", default=None, type=float)
+    parser.add_argument("--classifier_dropout", default=0.1, type=float)
+    parser.add_argument("--attention_dropout", default=0.1, type=float)
 
     # ST args
     parser.add_argument("--min_confidence_threshold", default=0.51, type=float)
