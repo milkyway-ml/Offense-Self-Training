@@ -10,8 +10,6 @@ olid-ns:
 	python train.py olidv1 \
 		--min_confidence_threshold 0.9 \
 		--use_augmentation \
-		--classifier_dropout 0.10 \
-		--attention_dropout 0.10 \
 		--increase_attention_dropout_amount 0.15 \
 		--increase_classifier_dropout_amount 0.15 \
 		--exp_name olidv1-ns
@@ -25,8 +23,6 @@ convabuse-ns:
 	python train.py convabuse \
 		--min_confidence_threshold 0.8 \
 		--use_augmentation \
-		--classifier_dropout 0.10 \
-		--attention_dropout 0.10 \
 		--increase_attention_dropout_amount 0.15 \
 		--increase_classifier_dropout_amount 0.15 \
 		--exp_name convabuse-ns
@@ -40,8 +36,6 @@ mhs-ns:
 	python train.py mhs \
 		--min_confidence_threshold 0.8 \
 		--use_augmentation \
-		--classifier_dropout 0.10 \
-		--attention_dropout 0.10 \
 		--increase_attention_dropout_amount 0.15 \
 		--increase_classifier_dropout_amount 0.15 \
 		--exp_name mhs-ns

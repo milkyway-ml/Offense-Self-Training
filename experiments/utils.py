@@ -61,7 +61,11 @@ def load_mhs(seed: Optional[int] = None) -> Tuple[pd.DataFrame]:
     dev_df = dev_df.reset_index(drop=True)
     test_df = test_df.reset_index(drop=True)
 
-    unlabeled_df = pd.read_csv(unlabeled_path)
+    unlabeled_df = pd.read_csv(unlabeled_path)[["text", "text_augmented"]]
+    unlabeled_df["text"] = unlabeled_df["text"]
+    unlabeled_df["text_augmented"] = unlabeled_df["text_augmented"]
+
+    unlabeled_df = unlabeled_df.drop_duplicates("text")
 
     return train_df, dev_df, test_df, unlabeled_df
 
@@ -77,7 +81,12 @@ def load_convabuse() -> Tuple[pd.DataFrame]:
     train_df = pd.read_csv(train_path)
     dev_df = pd.read_csv(dev_path)
     test_df = pd.read_csv(test_path)
-    unlabeled_df = pd.read_csv(unlabeled_path)
+
+    unlabeled_df = pd.read_csv(unlabeled_path)[["text", "text_augmented"]]
+    unlabeled_df["text"] = unlabeled_df["text"]
+    unlabeled_df["text_augmented"] = unlabeled_df["text_augmented"]
+
+    unlabeled_df = unlabeled_df.drop_duplicates("text")
 
     train_df["text"] = train_df.apply(
         lambda x: x["prev_agent"] + "\n" + x["prev_user"] + "\n" + x["agent"] + "\n" + x["user"], axis=1

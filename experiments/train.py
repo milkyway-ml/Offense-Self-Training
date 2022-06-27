@@ -21,7 +21,7 @@ def get_args():
     parser.add_argument("--max_seq_len", default=128, type=int)
     parser.add_argument("--batch_size", default=32, type=int)
     parser.add_argument("--device", default="cuda", type=str)
-    parser.add_argument("--weight_decay", default=1e-2, type=float)
+    parser.add_argument("--weight_decay", default=0, type=float)
     parser.add_argument("--num_train_epochs", default=2, type=int)
     parser.add_argument("--learning_rate", default=5e-5, type=float)
     parser.add_argument("--warmup_ratio", default=0.15, type=float)
