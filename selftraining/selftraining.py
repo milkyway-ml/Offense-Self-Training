@@ -49,8 +49,8 @@ class SelfTrainer:
         self,
         pretrained_bert_name: Optional[str] = "bert-base-cased",
         max_seq_len: Optional[int] = 128,
-        attention_dropout: Optional[float] = None,
-        classifier_dropout: Optional[float] = None,
+        attention_dropout: Optional[float] = 0.1,
+        classifier_dropout: Optional[float] = 0.1,
         weight_decay: Optional[float] = 1e-2,
         num_train_epochs: Optional[int] = 2,
         batch_size: Optional[int] = 32,
@@ -93,8 +93,6 @@ class SelfTrainer:
             if classifier_dropout is not None:
                 model.config.classifier_dropout = classifier_dropout
 
-        model.to(self.device)
-
         return model
 
     def __init_tokenizer(self) -> AutoTokenizer:
@@ -119,29 +117,15 @@ class SelfTrainer:
         return dataloader
 
     def __get_optimizer(self, train_dataloader: DataLoader) -> Tuple[torch.optim.Optimizer, torch.optim.Optimizer]:
-        if self.weight_decay is not None:
-            no_decay = ["bias", "LayerNorm.weight"]
-            parameters = [
-                {
-                    "params": [p for n, p in self.model.named_parameters() if not any(nd in n for nd in no_decay)],
-                    "weight_decay": self.weight_decay,
-                },
-                {
-                    "params": [p for n, p in self.model.named_parameters() if any(nd in n for nd in no_decay)],
-                    "weight_decay": 0.0,
-                },
-            ]
-        else:
-            parameters = self.model.parameters()
-
         total_steps = len(train_dataloader) * self.num_train_epochs
         num_warmup_steps = int(total_steps * self.warmup_ratio)
 
-        optimizer = torch.optim.AdamW(parameters, lr=self.learning_rate)
+        optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.learning_rate, weight_decay=self.weight_decay)
         scheduler = get_scheduler(
             "linear", optimizer=optimizer, num_warmup_steps=num_warmup_steps, num_training_steps=total_steps
         )
 
+        self.model.to(self.device)
         return optimizer, scheduler
 
     def __train(
@@ -417,18 +401,12 @@ class SelfTrainer:
             high_confidence_positive_idxs = np.random.choice(high_confidence_positive_idxs, size=size, replace=False)
 
         else:
-            if len(high_confidence_positive_idxs) == 0:
-                empty_class = "positive"
-            else:
-                empty_class = "negative"
-            raise Exception(f"No examples predicted for the {empty_class} class.")
+            raise Exception(f"No examples predicted for the one of the classes.")
 
         high_confidence_idxs = np.append(high_confidence_positive_idxs, high_confidence_negative_idxs)
-        high_confidence_idxs = [int(v) for v in high_confidence_idxs]
-        if len(high_confidence_idxs) < 1:
-            raise Exception(f"Could not select any silver labels using {min_confidence_threshold*100:.2f}% threshold.")
+
         # get selected elements from each data field by their idxs
-        selected_text = list(map(texts.__getitem__, high_confidence_idxs))
+        selected_text = list(map(texts.__getitem__, high_confidence_idxs.tolist()))
         selected_label = np.argmax(unl_softmax[high_confidence_idxs], axis=1)
         selected_confidence = np.max(unl_softmax[high_confidence_idxs], axis=1)
 
@@ -440,10 +418,10 @@ class SelfTrainer:
             }
         )
 
-        augmentedset = WeakLabelDataset(text=augmented_df["text"].to_list(), labels=augmented_df["label"].to_list())
-
+        augmentedset = WeakLabelDataset(text=selected_text, labels=selected_label)
         augmented_sampler = RandomSampler(augmentedset)
         augmented_dataloader = DataLoader(augmentedset, sampler=augmented_sampler, batch_size=self.batch_size)
+
         amnt_new_samples_pos = len(augmented_df[augmented_df["label"] == 1])
         amnt_new_samples_neg = len(augmented_df[augmented_df["label"] == 0])
 
@@ -525,6 +503,7 @@ class SelfTrainer:
 
             if increase_attention_dropout_amount is not None:
                 current_attention_dropout += increase_attention_dropout_amount
+            if increase_classifier_dropout_amount is not None:
                 current_classifier_dropout += increase_classifier_dropout_amount
             if increase_confidence_threshold_amount is not None:
                 current_confidence_threshold += increase_confidence_threshold_amount
